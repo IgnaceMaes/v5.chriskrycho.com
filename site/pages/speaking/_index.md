@@ -30,8 +30,8 @@ For podcasts or panel discussions, please give me at least of a month of notice 
 
 ---
 
-{% from 'components/contact.njk' import contact %}
-{{contact(form='speaking', requestDescription='Your speaking request')}}
+{% from 'components/contact.njk' import speaking %}
+{{speaking()}}
 
 ---
 
