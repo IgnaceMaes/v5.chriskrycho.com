@@ -22,6 +22,7 @@ type Archive = Year[];
 export const enum Order {
    OldFirst = 'OLD_FIRST',
    NewFirst = 'NEW_FIRST',
+   Series = 'SERIES',
 }
 
 const YEAR_FORMAT = 'yyyy';
@@ -32,39 +33,69 @@ type DayMap = Map<number, Item[]>;
 type MonthMap = Map<number, [string, DayMap]>;
 type YearMap = Map<number, [string, MonthMap]>;
 
-export const byDate = (order: Order) => (a: Item, b: Item): number => {
-   // Sort order is meaningless if either doesn't have the relevant comparison key.
-   if (!canParseDate(a.date) || !canParseDate(b.date)) {
-      return 0;
-   }
+function exhaustive(x: never): never {
+   throw new Error(`Should have been exhasutive but got ${x}`);
+}
 
-   const aDate = fromDateOrString(a.date).toSeconds();
-   const bDate = fromDateOrString(b.date).toSeconds();
-   return order === Order.OldFirst ? aDate - bDate : bDate - aDate;
-};
+export const byOrder =
+   (order: Order) =>
+   (a: Item, b: Item): number => {
+      switch (order) {
+         case Order.Series: {
+            if (!a.data?.series || !b.data?.series)
+               throw new Error('Cannot sort by series if items are not in a series');
 
-export const byUpdated = (order: Order) => (a: Item, b: Item): number => {
-   // Sort order is meaningless if either doesn't have the relevant comparison key.
-   if (!a.data || !b.data) {
-      return 0;
-   }
+            if ('root' in a.data.series && a.data.series.root) return -1;
 
-   // Likewise if the value isn't parseable for either.
-   if (!canParseDate(a.data.updated) || !canParseDate(b.data.updated)) {
-      return 0;
-   }
+            if ('root' in b.data.series && b.data.series.root) return -1;
 
-   const aUpdated = fromDateOrString(a.data.updated).toSeconds();
-   const bUpdated = fromDateOrString(b.data.updated).toSeconds();
-   return order === Order.OldFirst ? aUpdated - bUpdated : bUpdated - aUpdated;
-};
+            if (!('part' in a.data.series) || !('part' in b.data.series))
+               throw new Error(
+                  'Cannot sort by series if items are not either root or a part',
+               );
+
+            return a.data.series.part - b.data.series.part;
+         }
+         case Order.NewFirst:
+         case Order.OldFirst: {
+            // Sort order is meaningless if either doesn't have the relevant comparison key.
+            if (!canParseDate(a.date) || !canParseDate(b.date)) {
+               return 0;
+            }
+
+            const aDate = fromDateOrString(a.date).toSeconds();
+            const bDate = fromDateOrString(b.date).toSeconds();
+            return order === Order.OldFirst ? aDate - bDate : bDate - aDate;
+         }
+         default:
+            exhaustive(order);
+      }
+   };
+
+export const byUpdated =
+   (order: Order) =>
+   (a: Item, b: Item): number => {
+      // Sort order is meaningless if either doesn't have the relevant comparison key.
+      if (!a.data || !b.data) {
+         return 0;
+      }
+
+      // Likewise if the value isn't parseable for either.
+      if (!canParseDate(a.data.updated) || !canParseDate(b.data.updated)) {
+         return 0;
+      }
+
+      const aUpdated = fromDateOrString(a.data.updated).toSeconds();
+      const bUpdated = fromDateOrString(b.data.updated).toSeconds();
+      return order === Order.OldFirst ? aUpdated - bUpdated : bUpdated - aUpdated;
+   };
 
 const dateTimeFromItem = ({ date }: Item): DateTime => fromDateOrString(date);
 
 const daysFromDayMap = (dayMap: DayMap, byEntries: SortByEntries, order: Order): Day[] =>
    [...dayMap.entries()].sort(byEntries).map(([, items]) => ({
       name: dateTimeFromItem(items[0]).toFormat(DAY_FORMAT),
-      items: items.slice().sort(byDate(order)),
+      items: items.slice().sort(byOrder(order)),
    }));
 
 const monthsFromMonthMap = (
@@ -116,16 +147,17 @@ function toYearMap(yearMap: YearMap, item: Item): YearMap {
 
 type SortByEntries = ([a]: [number, unknown], [b]: [number, unknown]) => number;
 
-const sortBy = (order: Order): SortByEntries => ([a], [b]): number =>
-   order === Order.OldFirst ? a - b : b - a;
+const sortBy =
+   (order: Order): SortByEntries =>
+   ([a], [b]): number =>
+      order === Order.OldFirst ? a - b : b - a;
 
-const intoYear = (byEntries: SortByEntries, order: Order) => ([, [name, monthMap]]: [
-   number,
-   [string, MonthMap],
-]): Year => ({
-   name,
-   months: monthsFromMonthMap(monthMap, byEntries, order),
-});
+const intoYear =
+   (byEntries: SortByEntries, order: Order) =>
+   ([, [name, monthMap]]: [number, [string, MonthMap]]): Year => ({
+      name,
+      months: monthsFromMonthMap(monthMap, byEntries, order),
+   });
 
 /**
    Given a collection of items, generate a yearly-and-monthly-and-daily grouping.

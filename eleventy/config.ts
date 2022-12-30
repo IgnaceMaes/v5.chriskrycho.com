@@ -4,7 +4,7 @@ import { DateTime } from 'luxon';
 
 import { Config, Item, UserConfig, Collection } from '../types/eleventy';
 import absoluteUrl from './absolute-url';
-import archiveByYear, { byDate, byUpdated, Order } from './archive-by-year';
+import archiveByYear, { byOrder, byUpdated, Order } from './archive-by-year';
 import copyright from './copyright';
 import currentPage from './current-page';
 import toDateTime, { canParseDate, fromDateOrString, TZ } from './date-time';
@@ -63,7 +63,7 @@ function addCollectionFromDir(config: Config, path: string): void {
          .filter((item) => item.inputPath.includes(path))
          .filter(isLive)
          .filter(excludingStandalonePages)
-         .sort(byDate(Order.NewFirst)),
+         .sort(byOrder(Order.NewFirst)),
    );
 }
 
@@ -77,7 +77,7 @@ function latest(collection: Collection): Item[] {
       .getAll()
       .filter(isLive)
       .filter(excludingStandalonePages)
-      .sort(byDate(Order.NewFirst));
+      .sort(byOrder(Order.NewFirst));
 
    return [
       all.find(inCollectionNamed('essays')),
@@ -88,7 +88,7 @@ function latest(collection: Collection): Item[] {
       all.find(inCollectionNamed('elsewhere')),
    ]
       .filter(isNotVoid)
-      .sort(byDate(Order.NewFirst));
+      .sort(byOrder(Order.NewFirst));
 }
 
 const hasUpdated = (item: Item) => canParseDate(item.data?.updated);
@@ -120,7 +120,7 @@ const featured = (collection: Collection): Item[] =>
       .filter(isLive)
       .filter(excludingStandalonePages)
       .filter(isFeatured)
-      .sort(byDate(Order.NewFirst));
+      .sort(byOrder(Order.NewFirst));
 
 function config(config: Config): UserConfig {
    config.addWatchTarget('scripts');
@@ -175,7 +175,7 @@ function config(config: Config): UserConfig {
    });
 
    config.addCollection('live', (collection) =>
-      collection.getAll().filter(isLive).sort(byDate(Order.NewFirst)),
+      collection.getAll().filter(isLive).sort(byOrder(Order.NewFirst)),
    );
    config.addCollection('pages', (collection) =>
       collection.getAll().filter((item) => item.data?.standalonePage),
@@ -183,6 +183,7 @@ function config(config: Config): UserConfig {
    addCollectionFromDir(config, 'journal');
    addCollectionFromDir(config, 'journal/Fanfare for a New Era of American Spaceflight');
    addCollectionFromDir(config, 'journal/Ember Template Imports');
+   addCollectionFromDir(config, 'journal/Disney World 2022 Camera Gear');
    addCollectionFromDir(config, 'journal/2022/2022 in Review');
    addCollectionFromDir(config, 'essays');
    addCollectionFromDir(config, 'library');
@@ -205,14 +206,13 @@ function config(config: Config): UserConfig {
    addCollectionFromDir(config, 'photos');
    addCollectionFromDir(config, 'photos/New Mexico Vacation');
    addCollectionFromDir(config, 'photos/Dinosaur National Monument');
-   addCollectionFromDir(config, 'photos/Disney World 2022 Camera Gear');
 
    config.addCollection('nonNotes', (collection) =>
       collection
          .getAll()
          .filter(isLive)
          .filter(not(inCollectionNamed('notes')))
-         .sort(byDate(Order.NewFirst)),
+         .sort(byOrder(Order.NewFirst)),
    );
 
    config.addCollection('latest', latest);

@@ -14,5 +14,5 @@
       "public": true
    },
    "typescript.tsdk": "node_modules/typescript/lib",
-   "sarif-viewer.connectToGithubCodeScanning": "off"
+   "json.schemas": []
 }

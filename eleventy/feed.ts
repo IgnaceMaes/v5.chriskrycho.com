@@ -61,6 +61,7 @@ declare module '../types/eleventy' {
       link?: string;
       splash?: string;
       book?: Book;
+
       standalonePage?: boolean;
       featured?: boolean;
       draft?: boolean;
@@ -71,8 +72,23 @@ declare module '../types/eleventy' {
       feedId?: string;
       /** Markdown-enabled thanks to people who contributed to the thing. */
       thanks?: string;
+      series?: Series;
    }
 }
+
+interface WithTitle {
+   title: string;
+}
+
+interface SeriesRoot extends WithTitle {
+   root: true;
+}
+
+interface SeriesPart extends WithTitle {
+   part: number;
+}
+
+type Series = SeriesRoot | SeriesPart;
 
 function isBook(maybeBook: unknown): maybeBook is Book {
    if (typeof maybeBook !== 'object' || !maybeBook) {
